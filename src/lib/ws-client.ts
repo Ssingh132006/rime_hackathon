@@ -129,6 +129,7 @@ export class LiveChatWsClient {
         provider: 'rime',
       })
     } else if (event.type === 'text_message' || event.type === 'audio_chunk') {
+      const isVoice = event.type === 'audio_chunk'
       const userText =
         event.type === 'text_message'
           ? event.content
@@ -136,25 +137,28 @@ export class LiveChatWsClient {
 
       const turnId = `turn_${Date.now()}`
 
-      // 1. Partial transcript of user speech
-      setTimeout(() => {
-        this.options.onEvent?.({
-          type: 'partial_transcript',
-          role: 'user',
-          text: userText,
-          turnId: `u_${turnId}`,
-        })
-      }, 100)
+      // For microphone voice input, simulate incoming STT transcripts
+      if (isVoice) {
+        // 1. Partial transcript of user speech
+        setTimeout(() => {
+          this.options.onEvent?.({
+            type: 'partial_transcript',
+            role: 'user',
+            text: userText,
+            turnId: `u_${turnId}`,
+          })
+        }, 100)
 
-      // 2. Final transcript of user speech
-      setTimeout(() => {
-        this.options.onEvent?.({
-          type: 'final_transcript',
-          role: 'user',
-          text: userText,
-          turnId: `u_${turnId}`,
-        })
-      }, 300)
+        // 2. Final transcript of user speech
+        setTimeout(() => {
+          this.options.onEvent?.({
+            type: 'final_transcript',
+            role: 'user',
+            text: userText,
+            turnId: `u_${turnId}`,
+          })
+        }, 300)
+      }
 
       // 3. Partial transcript & audio chunks of assistant response
       const responseWords = [

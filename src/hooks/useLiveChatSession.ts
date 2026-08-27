@@ -59,7 +59,7 @@ export function useLiveChatSession(initialSessionId?: string) {
       case 'partial_transcript': {
         setTurns((prev) => {
           const last = prev[prev.length - 1]
-          if (last && last.role === event.role && !last.isFinal) {
+          if (last && last.role === event.role && (!last.isFinal || last.content === event.text)) {
             return [
               ...prev.slice(0, -1),
               { ...last, content: event.text },
@@ -90,14 +90,14 @@ export function useLiveChatSession(initialSessionId?: string) {
 
         setTurns((prev) => {
           const last = prev[prev.length - 1]
-          if (last && last.role === event.role && !last.isFinal) {
+          if (last && last.role === event.role && (!last.isFinal || last.content === event.text)) {
             return [
               ...prev.slice(0, -1),
               {
                 ...last,
                 content: event.text,
                 isFinal: true,
-                latencyMs: event.latencyMs,
+                latencyMs: event.latencyMs ?? last.latencyMs,
               },
             ]
           }
