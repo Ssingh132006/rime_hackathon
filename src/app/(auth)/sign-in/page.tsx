@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { AudioWaveform, Loader2 } from 'lucide-react'
-import { signInWithGoogle } from '@/lib/auth-client'
+import { AudioWaveform, Loader2, Sparkles, UserCheck } from 'lucide-react'
+import { signInWithGoogle, signInAsGuest } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 
 export default function SignInPage() {
   const [loading, setLoading] = useState(false)
+  const [guestLoading, setGuestLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleGoogleSignIn = async () => {
@@ -19,6 +20,11 @@ export default function SignInPage() {
       setError((err as Error).message || 'Could not initiate Google sign in. Please check your credentials.')
       setLoading(false)
     }
+  }
+
+  const handleGuestSignIn = async () => {
+    setGuestLoading(true)
+    await signInAsGuest('/dashboard')
   }
 
   return (
@@ -48,13 +54,13 @@ export default function SignInPage() {
           </div>
         ) : null}
 
-        {/* Single Continue with Google Button */}
+        {/* Action Buttons */}
         <div className="space-y-3">
           <Button
             type="button"
             variant="default"
             size="lg"
-            disabled={loading}
+            disabled={loading || guestLoading}
             onClick={handleGoogleSignIn}
             className="w-full font-mono text-xs gap-2 cursor-pointer"
           >
@@ -73,8 +79,29 @@ export default function SignInPage() {
             )}
           </Button>
 
+          <div className="relative flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <span className="relative bg-background px-2 text-[10px] uppercase font-mono text-muted-foreground">
+              Or Instant Demo
+            </span>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            disabled={loading || guestLoading}
+            onClick={handleGuestSignIn}
+            className="w-full font-mono text-xs gap-2 cursor-pointer border-border hover:bg-muted"
+          >
+            <UserCheck className="h-4 w-4" />
+            {guestLoading ? 'Entering Demo...' : 'Enter as Demo Judge'}
+          </Button>
+
           <p className="text-[11px] text-muted-foreground leading-normal">
-            By signing in, you agree to the hackathon demo terms. No personal data beyond Google profile is stored.
+            Monochrome Grayscale UI with full session-gated App Router protection.
           </p>
         </div>
       </div>

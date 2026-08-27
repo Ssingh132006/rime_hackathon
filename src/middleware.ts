@@ -9,7 +9,8 @@ export function middleware(req: NextRequest) {
   const hasCookie =
     req.cookies.get('better-auth.session_token') ??
     req.cookies.get('__Secure-better-auth.session_token') ??
-    req.cookies.get('session_token')
+    req.cookies.get('session_token') ??
+    req.cookies.get('demo_session_token')
 
   if (!hasCookie) {
     const signInUrl = new URL('/sign-in', req.url)

@@ -24,6 +24,11 @@ export async function signInWithGoogle(callbackURL = '/dashboard') {
   return result
 }
 
+export async function signInAsGuest(callbackURL = '/dashboard') {
+  document.cookie = 'demo_session_token=1; path=/; max-age=604800; SameSite=Lax'
+  window.location.href = callbackURL
+}
+
 export async function signOut(callbackURL = '/sign-in') {
   try {
     await authClient.signOut()
