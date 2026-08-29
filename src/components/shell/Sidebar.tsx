@@ -10,6 +10,8 @@ import {
   LogOut,
   User as UserIcon,
   AudioWaveform,
+  ShieldCheck,
+  Code2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HistoryList } from '@/components/history/HistoryList'
@@ -33,6 +35,11 @@ export function Sidebar({ user }: SidebarProps) {
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Live Chat', href: '/live-chat', icon: Mic },
     { label: 'Text to Speech', href: '/text-to-speech', icon: Volume2 },
+  ]
+
+  const devNav = [
+    { label: 'Acceptance Evidence', href: '/dev/evidence', icon: ShieldCheck },
+    { label: 'API Registry', href: '/dev/api', icon: Code2 },
   ]
 
   const handleSignOut = async () => {
@@ -91,11 +98,40 @@ export function Sidebar({ user }: SidebarProps) {
         </nav>
       </div>
 
+      {/* Dev / Hackathon Tools Navigation */}
+      <div className="px-3 pt-1">
+        <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Evaluation &amp; Contracts
+        </div>
+        <nav className="space-y-1">
+          {devNav.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname === item.href
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors border',
+                  isActive
+                    ? 'bg-foreground text-background border-foreground font-semibold shadow-xs'
+                    : 'border-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+
       {/* Divider */}
-      <div className="mx-3 my-1 border-t border-border" />
+      <div className="mx-3 my-2 border-t border-border" />
 
       {/* Past Chat Sessions History */}
-      <div className="flex flex-1 flex-col overflow-hidden px-3 pt-2">
+      <div className="flex flex-1 flex-col overflow-hidden px-3 pt-1">
         <div className="flex items-center justify-between px-2 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           <span>Chat History</span>
         </div>

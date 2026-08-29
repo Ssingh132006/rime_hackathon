@@ -4,10 +4,15 @@ import { cn } from '@/lib/utils'
 
 export type ProviderBadgeProps = {
   provider?: 'rime' | 'fallback'
+  model?: string
   className?: string
 }
 
-export function ProviderBadge({ provider = 'rime', className }: ProviderBadgeProps) {
+export function ProviderBadge({
+  provider = 'rime',
+  model,
+  className,
+}: ProviderBadgeProps) {
   const isRime = provider === 'rime'
 
   return (
@@ -19,14 +24,18 @@ export function ProviderBadge({ provider = 'rime', className }: ProviderBadgePro
           : 'bg-muted text-muted-foreground border-border border-dashed',
         className,
       )}
-      title={isRime ? 'Speech Provider: Rime (Ultra-low latency)' : 'Speech Provider: Fallback active'}
+      title={
+        isRime
+          ? `Speech Provider: Rime (${model || 'mistv3 / coda'})`
+          : 'Speech Provider: Fallback active'
+      }
     >
       {isRime ? (
         <Radio className="h-3 w-3 animate-pulse" />
       ) : (
         <Sparkles className="h-3 w-3" />
       )}
-      <span>Speech: {isRime ? 'Rime' : 'Fallback'}</span>
+      <span>Speech: {isRime ? (model ? `Rime (${model})` : 'Rime') : 'Fallback'}</span>
     </div>
   )
 }

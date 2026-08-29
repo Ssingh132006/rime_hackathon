@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import Link from 'next/link'
-import { ArrowLeft, Code2, Sparkles, Terminal } from 'lucide-react'
+import { ArrowLeft, Terminal } from 'lucide-react'
 import { contracts } from '@/contracts'
 import { isContract, isRegistryNode, type Contract } from '@/contracts/_kit'
 import { Button } from '@/components/ui/button'

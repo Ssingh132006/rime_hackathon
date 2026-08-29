@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { Play, Pause, Download, Volume2, Sparkles, Timer } from 'lucide-react'
+import { Play, Pause, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { LatencyBadge } from '@/components/chat/LatencyBadge'
 import { ProviderBadge } from '@/components/chat/ProviderBadge'

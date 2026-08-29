@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Check, Mic2, Sparkles } from 'lucide-react'
+import { Check, Mic2 } from 'lucide-react'
 import { api } from '@/lib/api-client'
 import { Voice } from '@/contracts/tts'
 import { Skeleton } from '@/components/ui/skeleton'

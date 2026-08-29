@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   Radio,
   Layers,
-  Sparkles,
 } from 'lucide-react'
 import { AudioRecorder } from '@/lib/audio/recorder'
 import { AudioPlayerQueue } from '@/lib/audio/player-queue'

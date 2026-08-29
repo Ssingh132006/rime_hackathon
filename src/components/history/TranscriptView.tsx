@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Clock, MessageSquare, Sparkles } from 'lucide-react'
+import { ArrowLeft, Clock, MessageSquare } from 'lucide-react'
 import { api } from '@/lib/api-client'
 import { HistoryDetailResponse } from '@/contracts/history'
 import { MessageBubble } from '@/components/chat/MessageBubble'

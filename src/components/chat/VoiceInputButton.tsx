@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Mic, MicOff, Square } from 'lucide-react'
+import { Mic } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 

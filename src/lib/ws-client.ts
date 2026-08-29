@@ -7,6 +7,7 @@ export type WsClientOptions = {
   sessionId: string
   token?: string
   mockMode?: boolean
+  stressMode?: boolean
   onStatusChange?: (status: WsStatus) => void
   onEvent?: (event: WsServerEvent) => void
   onError?: (error: Error) => void
@@ -18,16 +19,26 @@ export class LiveChatWsClient {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectTimeout: NodeJS.Timeout | null = null
-  private mockTimer: NodeJS.Timeout | null = null
+  private mockTimers: NodeJS.Timeout[] = []
+  private currentGenerationId = 0
   private options: WsClientOptions
 
   constructor(options: WsClientOptions) {
     this.options = options
   }
 
+  public setStressMode(enabled: boolean): void {
+    this.options.stressMode = enabled
+  }
+
   public connect(): void {
     if (this.options.mockMode) {
       this.setStatus('connected')
+      this.options.onEvent?.({
+        type: 'provider_status',
+        provider: 'rime',
+        model: 'mistv3 / coda',
+      })
       return
     }
 
@@ -49,6 +60,7 @@ export class LiveChatWsClient {
         this.send({
           type: 'start_session',
           sessionId: this.options.sessionId,
+          protocolVersion: 1,
         })
       }
 
@@ -97,7 +109,7 @@ export class LiveChatWsClient {
 
   public disconnect(): void {
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout)
-    if (this.mockTimer) clearTimeout(this.mockTimer)
+    this.clearMockTimers()
     if (this.ws) {
       this.ws.close()
       this.ws = null
@@ -122,74 +134,116 @@ export class LiveChatWsClient {
     }, delay)
   }
 
+  private clearMockTimers(): void {
+    this.mockTimers.forEach((t) => clearTimeout(t))
+    this.mockTimers = []
+  }
+
   private handleMockClientEvent(event: WsClientEvent): void {
     if (event.type === 'start_session') {
       this.options.onEvent?.({
         type: 'provider_status',
         provider: 'rime',
+        model: 'mistv3 / coda',
       })
     } else if (event.type === 'text_message' || event.type === 'audio_chunk') {
+      // Monotonically increase generationId for fencing
+      this.currentGenerationId++
+      const myGenerationId = this.currentGenerationId
+      this.clearMockTimers()
+
       const isVoice = event.type === 'audio_chunk'
       const userText =
         event.type === 'text_message'
           ? event.content
-          : 'Can you explain the Rime voice synthesis pipeline and how it achieves sub-150ms latency?'
+          : 'Can you check my order status and explain the Rime voice synthesis latency?'
 
       const turnId = `turn_${Date.now()}`
 
       // For microphone voice input, simulate incoming STT transcripts
       if (isVoice) {
         // 1. Partial transcript of user speech
-        setTimeout(() => {
+        const t1 = setTimeout(() => {
+          if (this.currentGenerationId !== myGenerationId) return // Fenced
           this.options.onEvent?.({
             type: 'partial_transcript',
             role: 'user',
             text: userText,
             turnId: `u_${turnId}`,
+            generationId: myGenerationId,
           })
         }, 100)
+        this.mockTimers.push(t1)
 
         // 2. Final transcript of user speech
-        setTimeout(() => {
+        const t2 = setTimeout(() => {
+          if (this.currentGenerationId !== myGenerationId) return // Fenced
           this.options.onEvent?.({
             type: 'final_transcript',
             role: 'user',
             text: userText,
             turnId: `u_${turnId}`,
+            generationId: myGenerationId,
           })
-        }, 300)
+        }, 250)
+        this.mockTimers.push(t2)
       }
 
-      // 3. Partial transcript & audio chunks of assistant response
-      const responseWords = [
-        'Rime',
-        'delivers',
-        'high-speed',
-        'voice',
-        'synthesis',
-        'engineered',
-        'for',
-        'seamless',
-        'real-time',
-        'dialogue',
-        'with',
-        'instant',
-        'interruption',
-        'recovery.',
-      ]
+      // If stress mode is active, simulate a 3-second tool / LLM delay
+      const initialDelay = this.options.stressMode ? 3000 : 350
 
-      // Simulated sample audio chunk
+      const responseWords = this.options.stressMode
+        ? [
+            '[Tool',
+            'Completed]',
+            'Order',
+            '#8492',
+            'verified.',
+            'Rime',
+            'delivers',
+            'sub-150ms',
+            'first-byte',
+            'speech',
+            'synthesis',
+            'with',
+            'instant',
+            'barge-in',
+            'fencing.',
+          ]
+        : [
+            'Rime',
+            'delivers',
+            'ultra-low',
+            'latency',
+            'voice',
+            'synthesis',
+            'engineered',
+            'for',
+            'real-time',
+            'dialogue',
+            'with',
+            'instant',
+            'barge-in',
+            'recovery.',
+          ]
+
       const sampleAudioUrl = 'https://actions.google.com/sounds/v1/speech/greeting_male.ogg'
 
       let accumulated = ''
       responseWords.forEach((word, idx) => {
-        this.mockTimer = setTimeout(() => {
+        const timer = setTimeout(() => {
+          // Fencing check: discard if newer generation started or interrupted
+          if (this.currentGenerationId !== myGenerationId) {
+            return
+          }
+
           accumulated += (idx === 0 ? '' : ' ') + word
           this.options.onEvent?.({
             type: 'partial_transcript',
             role: 'assistant',
             text: accumulated,
             turnId: `a_${turnId}`,
+            generationId: myGenerationId,
           })
 
           // Enqueue audio chunk on first word
@@ -200,6 +254,7 @@ export class LiveChatWsClient {
               turnId: `a_${turnId}`,
               chunkIndex: 0,
               isLast: false,
+              generationId: myGenerationId,
               provider: 'rime',
             })
           }
@@ -210,18 +265,27 @@ export class LiveChatWsClient {
               role: 'assistant',
               text: accumulated,
               turnId: `a_${turnId}`,
-              latencyMs: 138,
+              generationId: myGenerationId,
+              latencyMs: this.options.stressMode ? 3120 : 124,
             })
           }
-        }, 500 + idx * 120)
+        }, initialDelay + idx * 120)
+
+        this.mockTimers.push(timer)
       })
     } else if (event.type === 'user_interrupt') {
-      if (this.mockTimer) clearTimeout(this.mockTimer)
+      // Invalidate the current generation
+      this.currentGenerationId++
+      this.clearMockTimers()
+
       this.options.onEvent?.({
         type: 'state_sync',
-        turnId: 'current',
-        deliveredText: 'Rime delivers high-speed voice synthesis...',
+        turnId: `turn_int_${Date.now()}`,
+        generationId: this.currentGenerationId,
+        deliveredText: 'Rime delivers ultra-low latency voice synthesis...',
         interrupted: true,
+        timeToSilenceMs: 84,
+        ttfbMs: 112,
       })
     }
   }

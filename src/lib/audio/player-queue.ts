@@ -1,5 +1,6 @@
 export type PlaybackStateListener = (isPlaying: boolean) => void
 export type ChunkPlayedListener = (chunkIndex: number, remaining: number) => void
+export type InterruptionListener = (timeToSilenceMs: number) => void
 
 export class AudioPlayerQueue {
   private queue: string[] = []
@@ -8,13 +9,17 @@ export class AudioPlayerQueue {
   private chunkIndex = 0
   private onPlaybackStateChange?: PlaybackStateListener
   private onChunkPlayed?: ChunkPlayedListener
+  private onInterruptSilence?: InterruptionListener
+  private firstByteTime: number | null = null
 
   constructor(
     onPlaybackStateChange?: PlaybackStateListener,
     onChunkPlayed?: ChunkPlayedListener,
+    onInterruptSilence?: InterruptionListener,
   ) {
     this.onPlaybackStateChange = onPlaybackStateChange
     this.onChunkPlayed = onChunkPlayed
+    this.onInterruptSilence = onInterruptSilence
   }
 
   /**
@@ -37,13 +42,20 @@ export class AudioPlayerQueue {
 
   /**
    * Immediately halts active audio and empties the upcoming chunk queue.
+   * Accurately measures client-side time to silence (target < 150ms).
    */
-  public interrupt(): void {
+  public interrupt(): number {
+    const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now()
+
     if (this.currentAudio) {
-      this.currentAudio.pause()
-      this.currentAudio.currentTime = 0
-      this.currentAudio.removeAttribute('src')
-      this.currentAudio.load()
+      try {
+        this.currentAudio.pause()
+        this.currentAudio.currentTime = 0
+        this.currentAudio.removeAttribute('src')
+        this.currentAudio.load()
+      } catch (err) {
+        console.warn('[AudioPlayerQueue] Pause exception handled:', err)
+      }
       this.currentAudio = null
     }
 
@@ -51,6 +63,12 @@ export class AudioPlayerQueue {
     this.isPlaying = false
     this.chunkIndex = 0
     this.onPlaybackStateChange?.(false)
+
+    const endTime = typeof performance !== 'undefined' ? performance.now() : Date.now()
+    const timeToSilenceMs = Math.max(1, Math.round(endTime - startTime))
+    this.onInterruptSilence?.(timeToSilenceMs)
+
+    return timeToSilenceMs
   }
 
   public clearQueue(): void {

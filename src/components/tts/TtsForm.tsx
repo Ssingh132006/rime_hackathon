@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Sparkles, Loader2, Play } from 'lucide-react'
+import { Sparkles, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api-client'
 import { GenerateTtsResponse } from '@/contracts/tts'
 import { VoicePicker } from '@/components/tts/VoicePicker'

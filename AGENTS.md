@@ -19,24 +19,25 @@ npm run lint
 4. **Monochrome grayscale styling only.** Never introduce colored design tokens (no blue links, green pills, or red badges). Use borders, weight, icons, and strike/underline.
 5. **Session-gating in App Router.** Gated layouts use `await getSession(await headers())`.
 6. **Visibly indicate mock data.** Always render `<MockBadge />` on pages consuming mock data so judges and developers know when mock fallbacks are active.
-7. **Handle speech barge-in/interrupts cleanly.** On user interruption, flush audio playback queue immediately and send `user_interrupt` event to WebSocket.
+7. **Handle speech barge-in/interrupts cleanly.** On user interruption, flush audio playback queue immediately (measure client-side silence target <150ms) and send `user_interrupt` event to WebSocket / LiveKit data channel with monotonic `generationId`.
+8. **Generation Fencing & Error Handling.** All turns and cancellation events pass `generationId` so stale tool/LLM work is discarded. All six error codes (`stt_error`, `llm_error`, `tts_error`, `provider_fallback`, `session_not_found`, `internal_error`) must be handled explicitly in UI.
 
-## WebSocket Protocol
+## WebSocket & LiveKit Data Channel Protocol
 
 ### Client → Server Events
-- `start_session`: `{ type: 'start_session', sessionId: string, voiceId?: string }`
+- `start_session`: `{ type: 'start_session', sessionId: string, voiceId?: string, protocolVersion?: 1 }`
 - `audio_chunk`: `{ type: 'audio_chunk', data: string, format: 'audio/webm;codecs=opus' }`
 - `text_message`: `{ type: 'text_message', content: string }`
-- `user_interrupt`: `{ type: 'user_interrupt', timestamp: number, reason?: string }`
+- `user_interrupt`: `{ type: 'user_interrupt', timestamp: number (epoch_ms), generationId?: number, reason?: string }`
 - `end_session`: `{ type: 'end_session', sessionId: string }`
 
 ### Server → Client Events
-- `provider_status`: `{ type: 'provider_status', provider: 'rime' | 'fallback' }`
-- `partial_transcript`: `{ type: 'partial_transcript', role: 'user' | 'assistant', text: string, turnId?: string }`
-- `final_transcript`: `{ type: 'final_transcript', role: 'user' | 'assistant', text: string, turnId: string, latencyMs?: number }`
-- `tts_audio_chunk`: `{ type: 'tts_audio_chunk', audioData: string, turnId: string, chunkIndex: number, isLast: boolean, provider?: 'rime' | 'fallback' }`
-- `state_sync`: `{ type: 'state_sync', turnId: string, deliveredText: string, interrupted: boolean }`
-- `error`: `{ type: 'error', message: string, code?: string }`
+- `provider_status`: `{ type: 'provider_status', provider: 'rime' | 'fallback', model?: string }`
+- `partial_transcript`: `{ type: 'partial_transcript', role: 'user' | 'assistant', text: string, turnId?: string, generationId?: number }`
+- `final_transcript`: `{ type: 'final_transcript', role: 'user' | 'assistant', text: string, turnId: string, generationId?: number, latencyMs?: number }`
+- `tts_audio_chunk`: `{ type: 'tts_audio_chunk', audioData: string, turnId: string, chunkIndex: number, isLast: boolean, generationId?: number, provider?: 'rime' | 'fallback' }`
+- `state_sync`: `{ type: 'state_sync', turnId: string, generationId?: number, deliveredText: string, interrupted: boolean, ttfbMs?: number, timeToSilenceMs?: number }`
+- `error`: `{ type: 'error', message: string, code?: 'stt_error' | 'llm_error' | 'tts_error' | 'provider_fallback' | 'session_not_found' | 'internal_error' }`
 
 <!-- BEGIN:nextjs-agent-rules -->
 

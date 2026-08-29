@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { AudioWaveform, Loader2, Sparkles, UserCheck } from 'lucide-react'
+import { AudioWaveform, Loader2, UserCheck } from 'lucide-react'
 import { signInWithGoogle, signInAsGuest } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 
